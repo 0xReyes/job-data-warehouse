@@ -62,7 +62,7 @@ export const verifyAuth = async () => {
 export const logout = async () => {
   try {
     // Optional: call backend logout endpoint if you implement it
-    // await authApi.post('/auth/logout');
+    await authApi.post('/auth/logout');
     return { success: true };
   } catch (error) {
     console.error('Logout error:', error);
@@ -177,30 +177,5 @@ export const getArtifactByDispatchId = async (dispatchId) => {
   } catch (error) {
     console.error("Error getting artifact by ID:", error);
     throw new Error(`Failed to find artifact: ${error.message}`);
-  }
-};
-
-export const downloadArtifact = async (url) => {
-  try {
-    console.log(url);
-    const response = await api.get(url, {
-      responseType: 'arraybuffer',
-    });
-    
-    const zip = new JSZip();
-    const zipContent = await zip.loadAsync(response.data);
-    const files = {};
-
-    await Promise.all(
-      Object.keys(zipContent.files).map(async filename => {
-        console.log(filename)
-        files[filename] = await zipContent.files[filename].async("string");
-      })
-    );
-    console.log('files', files)
-    return files;
-  } catch (error) {
-    console.error("Error downloading artifact:", error);
-    throw new Error(`Failed to download artifact: ${error.message}`);
   }
 };
