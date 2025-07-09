@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Button, 
   Select,  
@@ -27,7 +27,7 @@ import {
   EditOutlined,
   FileTextOutlined
 } from '@ant-design/icons';
-
+import { AuthProvider, useAuth } from './context/AuthProvider';
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -235,7 +235,8 @@ const AppHeader = ({ onRefresh, isLoading }) => (
 );
 
 // Main App Component
-export default function App() {
+function App() {
+  const authContent = useAuth()
   const [jobs, setJobs] = useState([]);
   const [allJobs, setAllJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -414,7 +415,7 @@ export default function App() {
         <AppHeader onRefresh={fetchJobs} isLoading={isLoading} />
         <Content style={{ padding: '48px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <div style={{ textAlign: 'center' }}>
-            <Spin size="large" />
+            <Spin spinning={authContent.isAuthenticated} size="large" />
             <div style={{ marginTop: '16px' }}>
               <Text type="secondary" style={{ fontSize: '16px' }}>Loading remote engineering jobs...</Text>
             </div>
@@ -423,11 +424,17 @@ export default function App() {
       </Layout>
     );
   }
-
+  useEffect(() => {
+    if (!authContent.isAuthenticated){
+      authContent.login()
+    }
+  },[authContent.isAuthenticated])
   return (
     <Layout style={{ height: '100%', background: '#f0f2f5' }}>
       <AppHeader onRefresh={fetchJobs} isLoading={isLoading} />
+
       <Content style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
+      <Spin  fullscreen spinning={!authContent.isAuthenticated} size="large" />
 
         <Card style={{ marginBottom: '24px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
           <Row gutter={[16, 16]}>
@@ -528,4 +535,14 @@ export default function App() {
       </Content>
     </Layout>
   );
+}
+
+
+export default function AppWrapper() {
+
+  return  useCallback(() => (
+    <AuthProvider>
+        <App />
+    </AuthProvider>
+  ),[App])();
 }

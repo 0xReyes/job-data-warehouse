@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "antd": "^5.26.4",
+    "axios": "^1.10.0",
+    "jszip": "^3.10.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
