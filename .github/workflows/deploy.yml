@@ -26,7 +26,7 @@ jobs:
         run: |
           npm run build --prefix ./website
           echo "Build directory contents:"
-          ls -R ./website/build || true
+          ls -R ./website/dist || true
         env:
           NODE_ENV: production
           REACT_APP_API_BASE_URL: 'https://github-utils-api.onrender.com/api.github.com'
@@ -34,7 +34,7 @@ jobs:
       - name: Verify build output
         run: |
           echo "Checking build directory exists..."
-          if [ ! -d "./website/build" ]; then
+          if [ ! -d "./website/dist" ]; then
             echo "❌ Build directory not found!"
             exit 1
           else
@@ -44,7 +44,7 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ secrets.PAT }}
-          publish_dir: ./website/build
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./website/dist
           publish_branch: gh-pages
           keep_files: true
