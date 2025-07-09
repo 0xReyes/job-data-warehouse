@@ -1,0 +1,50 @@
+name: Deploy to GitHub Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci --prefix ./website
+
+      - name: Build React app
+        run: |
+          npm run build --prefix ./website
+          echo "Build directory contents:"
+          ls -R ./website/build || true
+        env:
+          NODE_ENV: production
+          REACT_APP_API_BASE_URL: 'https://github-utils-api.onrender.com/api.github.com'
+
+      - name: Verify build output
+        run: |
+          echo "Checking build directory exists..."
+          if [ ! -d "./website/build" ]; then
+            echo "❌ Build directory not found!"
+            exit 1
+          else
+            echo "✅ Build directory found"
+          fi
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./website/build
+          publish_branch: gh-pages
+          keep_files: true
