@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useContext, createContext } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { 
   Button, 
   Select,  
@@ -28,139 +28,12 @@ import {
   FileTextOutlined,
   UserOutlined
 } from '@ant-design/icons';
+import { AuthContext } from './context/AuthContext';
+import { AuthProvider } from './context/AuthProvider';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
 const { TextArea } = Input;
-
-// Mock Auth Context (replace with your actual auth implementation)
-const AuthContext = createContext({
-  isAuthenticated: false,
-  getJobData: () => Promise.resolve(null),
-  login: () => {},
-  logout: () => {}
-});
-
-// Mock Auth Provider
-const AuthProvider = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Simulate authentication check
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsAuthenticated(true);
-      setIsLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Mock job data - replace with actual API call
-  const getJobData = useCallback(async () => {
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      return {
-        data: [
-          {
-            id: 'job-1',
-            company: 'TD Bank',
-            title: 'Senior Software Engineer',
-            tags: ['Senior', 'Engineering', 'Software'],
-            location: 'Toronto',
-            salary: 'Competitive',
-            featured: true,
-            posted: '2 days ago',
-            type: 'Full-time',
-            description: 'Join our engineering team to build innovative banking solutions.',
-            link: 'https://td.wd3.myworkdayjobs.com/job1',
-            source: 'Workday'
-          },
-          {
-            id: 'job-2',
-            company: 'CIBC',
-            title: 'Data Engineer',
-            tags: ['Engineering', 'Data'],
-            location: 'Montreal',
-            salary: 'Competitive',
-            featured: false,
-            posted: '1 week ago',
-            type: 'Full-time',
-            description: 'Work with big data technologies to drive insights.',
-            link: 'https://cibc.wd3.myworkdayjobs.com/job2',
-            source: 'Workday'
-          },
-          {
-            id: 'job-3',
-            company: 'Autodesk',
-            title: 'Engineering Manager',
-            tags: ['Management', 'Engineering', 'Leadership'],
-            location: 'Remote',
-            salary: 'Competitive',
-            featured: true,
-            posted: '3 days ago',
-            type: 'Full-time',
-            description: 'Lead a team of talented engineers building CAD software.',
-            link: 'https://autodesk.wd1.myworkdayjobs.com/job3',
-            source: 'Workday'
-          },
-          {
-            id: 'job-4',
-            company: 'Sartorius',
-            title: 'Software Specialist',
-            tags: ['Specialist', 'Software'],
-            location: 'Germany',
-            salary: 'Competitive',
-            featured: false,
-            posted: '5 days ago',
-            type: 'Contract',
-            description: 'Develop software solutions for laboratory equipment.',
-            link: 'https://sartorius.wd3.myworkdayjobs.com/job4',
-            source: 'Workday'
-          },
-          {
-            id: 'job-5',
-            company: 'Harris Computer',
-            title: 'Senior Data Analyst',
-            tags: ['Senior', 'Data'],
-            location: 'Ontario',
-            salary: 'Competitive',
-            featured: false,
-            posted: '1 week ago',
-            type: 'Full-time',
-            description: 'Analyze complex datasets to drive business decisions.',
-            link: 'https://harriscomputer.wd3.myworkdayjobs.com/job5',
-            source: 'Workday'
-          }
-        ]
-      };
-    } catch (error) {
-      console.error('Error fetching job data:', error);
-      return null;
-    }
-  }, []);
-
-  const login = useCallback(() => {
-    setIsAuthenticated(true);
-  }, []);
-
-  const logout = useCallback(() => {
-    setIsAuthenticated(false);
-  }, []);
-
-  return (
-    <AuthContext.Provider value={{ 
-      isAuthenticated: isAuthenticated && !isLoading, 
-      isLoading,
-      getJobData, 
-      login, 
-      logout 
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
 
 // Cover Letter Modal Component
 const CoverLetterModal = ({ visible, onClose, job, onSave, initialData }) => {
@@ -220,8 +93,8 @@ const CoverLetterModal = ({ visible, onClose, job, onSave, initialData }) => {
 
 // Header Component
 const AppHeader = ({ onRefresh, isRefreshing }) => {
-  const { logout, isAuthenticated } = useContext(AuthContext);
-  
+  const { isAuthenticated, logout } = useContext(AuthContext);
+
   return (
     <Header style={{ 
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
@@ -263,7 +136,12 @@ const AppHeader = ({ onRefresh, isRefreshing }) => {
 
 // Main App Component
 function App() {
-  const authContext = useContext(AuthContext);
+  const {
+    isAuthenticated,
+    loading,
+    login,
+    getJobData,
+  } = useContext(AuthContext);
   const [jobs, setJobs] = useState([]);
   const [allJobs, setAllJobs] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -278,23 +156,16 @@ function App() {
 
   // Get unique filter options from current jobs
   const getUniqueOptions = useCallback((key) => {
-    const values = allJobs.map(job => job[key]).filter(Boolean);
+    const values = allJobs.map(job => job[key]).filter(val => val != null);
     return [...new Set(values)].sort();
   }, [allJobs]);
 
-  // Fixed: Load jobs only when authenticated, prevent infinite loop
-  useEffect(() => {
-    if (authContext.isAuthenticated && allJobs.length === 0) {
-      loadJobs();
-    }
-  }, [authContext.isAuthenticated,loadJobs, allJobs.length]); // Removed allJobs dependency to prevent infinite loop
-
   const loadJobs = useCallback(async () => {
-    if (!authContext.isAuthenticated) return;
+    if (!isAuthenticated) return;
     
     setIsRefreshing(true);
     try {
-      const response = await authContext.getJobData();
+      const response = await getJobData();
       if (response?.data) {
         setAllJobs(response.data);
       }
@@ -304,42 +175,47 @@ function App() {
     } finally {
       setIsRefreshing(false);
     }
-  }, [authContext]);
+  }, [isAuthenticated, getJobData]);
 
-  // Filter jobs based on search and filters
+  useEffect(() => {
+    if (isAuthenticated && allJobs.length === 0) {
+      loadJobs();
+    }
+  }, [isAuthenticated, loadJobs, allJobs.length]);
+
   useEffect(() => {
     let filtered = allJobs;
 
     if (search) {
       const searchTerm = search.toLowerCase();
       filtered = filtered.filter(job =>
-        job.title.toLowerCase().includes(searchTerm) ||
-        job.company.toLowerCase().includes(searchTerm) ||
-        job.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+        (job.title && job.title.toLowerCase().includes(searchTerm)) ||
+        (job.company && job.company.toLowerCase().includes(searchTerm)) ||
+        (job.tags && job.tags.some(tag => tag.toLowerCase().includes(searchTerm)))
       );
     }
 
     if (selectedFunction !== 'all') {
       filtered = filtered.filter(job =>
-        job.tags.some(tag => tag.toLowerCase().includes(selectedFunction.toLowerCase()))
+        job.tags && job.tags.some(tag => tag.toLowerCase().includes(selectedFunction.toLowerCase()))
       );
     }
 
     if (selectedLocation !== 'all') {
       filtered = filtered.filter(job =>
-        job.location.toLowerCase().includes(selectedLocation.toLowerCase())
+        job.location && job.location.toLowerCase().includes(selectedLocation.toLowerCase())
       );
     }
 
     if (selectedType !== 'all') {
       filtered = filtered.filter(job =>
-        job.type.toLowerCase() === selectedType.toLowerCase()
+        job.type && job.type.toLowerCase() === selectedType.toLowerCase()
       );
     }
 
     if (selectedSource !== 'all') {
       filtered = filtered.filter(job =>
-        job.source.toLowerCase() === selectedSource.toLowerCase()
+        job.source && job.source.toLowerCase() === selectedSource.toLowerCase()
       );
     }
 
@@ -387,7 +263,7 @@ function App() {
       render: (_, record) => (
         <div>
           <Space wrap style={{ marginBottom: '8px' }}>
-            {record.tags.map(tag => (
+            {record.tags && record.tags.map(tag => (
               <Tag key={tag} color="blue" style={{ borderRadius: '12px' }}>{tag}</Tag>
             ))}
           </Space>
@@ -443,7 +319,7 @@ function App() {
     }
   ];
 
-  if (authContext.isLoading) {
+  if (loading) {
     return (
       <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
         <AppHeader onRefresh={loadJobs} isRefreshing={isRefreshing} />
@@ -459,7 +335,7 @@ function App() {
     );
   }
 
-  if (!authContext.isAuthenticated) {
+  if (!isAuthenticated) {
     return (
       <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
         <AppHeader onRefresh={loadJobs} isRefreshing={isRefreshing} />
@@ -468,7 +344,7 @@ function App() {
             <Title level={3}>Welcome to engineers4hire</Title>
             <Text type="secondary">Please authenticate to view job listings</Text>
             <div style={{ marginTop: '24px' }}>
-              <Button type="primary" size="large" onClick={authContext.login}>
+              <Button type="primary" size="large" onClick={login}>
                 Login
               </Button>
             </div>
@@ -481,7 +357,6 @@ function App() {
   return (
     <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
       <AppHeader onRefresh={loadJobs} isRefreshing={isRefreshing} />
-
       <Content style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
         <Card style={{ marginBottom: '24px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
           <Row gutter={[16, 16]}>
@@ -551,7 +426,6 @@ function App() {
             </Col>
           </Row>
         </Card>
-
         <Card style={{ borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
           <div style={{ marginBottom: '16px' }}>
             <Title level={4} style={{ margin: 0 }}>
@@ -585,11 +459,10 @@ function App() {
   );
 }
 
-// Fixed: Proper component wrapper without useCallback misuse
 export default function AppWrapper() {
   return (
     <AuthProvider>
-      <App />
+      {<App />}
     </AuthProvider>
   );
 }
