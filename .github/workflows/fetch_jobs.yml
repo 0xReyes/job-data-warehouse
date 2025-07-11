@@ -26,12 +26,12 @@ jobs:
       - name: Fetch job data
         env:
           SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
-        run: python scripts/fetch_jobs.py
+        run: python scripts/test.py
 
-      - name: Commit and push changes
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "github-actions@github.com"
-          git add data/jobs_data.json
-          git commit -m "Automated: Update job data [skip ci]" || echo "No changes to commit"
-          git push origin feature/test
+      # - name: Commit and push changes
+      #   run: |
+      #     git config user.name "GitHub Actions"
+      #     git config user.email "github-actions@github.com"
+      #     git add data/jobs_data.json
+      #     git commit -m "Automated: Update job data [skip ci]" || echo "No changes to commit"
+      #     git push origin feature/test
