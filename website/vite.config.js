@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   base: './',  // Use relative paths
   server: {
-    port: 5173,
+    port: 3000,
     host: true
   }
 })

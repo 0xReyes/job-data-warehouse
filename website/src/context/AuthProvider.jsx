@@ -1,143 +1,143 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { login as apiLogin, verifyAuth, fetchJobData, authenticatedFetch } from '../service/api';
 import { AuthContext } from './AuthContext';
 
-
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [authToken, setAuthToken] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
-  const handleAutoLogin = useCallback(async() => {
+  // Auth status check and auto-login handler
+  const checkAuthStatus = useCallback(async () => {
     if (loading) return;
     try {
-      setLoading(true)
-      const result = await apiLogin();
-      if (result.success) {
-        setAuthToken(result.token);
-        setIsAuthenticated(true);
-        localStorage.setItem('auth_token', result.token);
-        console.log('Auto-login successful');
-      } else {
-        setTimeout(handleAutoLogin, 5000); // Retry every 5 seconds
-      }
-    } catch (error) {
-      console.log(error);
-      setTimeout(handleAutoLogin, 50000); // Retry every 5 seconds
-    }
-  }, [loading]);
-  // Check if user is already authenticated on app load
-  useEffect(() => {
-    checkAuthStatus();
-  }, [isAuthenticated]);
-
-  // Show login modal if not authenticated and not loading
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-       handleAutoLogin();
-    }
-  }, [handleAutoLogin, loading, isAuthenticated]);
-
-
-  const checkAuthStatus = async () => {
-    try {
-      // First, check if we have a stored token
+      setLoading(true);
       const isAuth = await verifyAuth();
-      setIsAuthenticated(isAuth)
+      setIsAuthenticated(isAuth);
       return isAuth;
     } catch (error) {
       console.error('Auth check failed:', error);
-      setIsAuthenticated(false);
-      setAuthToken(null);
       localStorage.removeItem('auth_token');
+      return false;
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const login = async () => {
+  const handleAutoLogin = useCallback(async () => {
+    if (loading) return;
+    setLoading(true);
     try {
+      if (await checkAuthStatus()){
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(true);
+        const result = await apiLogin();
+        if (result.success) {
+          setAuthToken(result.token);
+          setIsAuthenticated(true);
+          localStorage.setItem('auth_token', result.token);
+        }
+      }
+    } catch (error) {
+      console.error('Auto-login error:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Trigger auto-login when not authenticated
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      handleAutoLogin()
+    }
+
+  }, []);
+
+  // Authentication methods
+  const login = useCallback(async () => {
+    if (loading) return;
+    try {
+      setLoading(true);
       const result = await apiLogin();
       
       if (result.success) {
         setAuthToken(result.token);
-        setIsAuthenticated(true);
-        setShowLoginModal(false); // Hide modal on successful login
-        // Store token in localStorage as fallback for axios interceptor
-        localStorage.setItem('auth_token', result.token);
-        return { success: true, message: result.message };
-      } else {
-        return { success: false, error: result.error };
+        response = await getJobData()
+        if (response.success){
+          setIsAuthenticated(true);
+          setShowLoginModal(false);
+          localStorage.setItem('auth_token', result.token);
+          // localStorage.setItem('data', response.data);
+        }
       }
+      return result;
     } catch (error) {
       console.error('Login failed:', error);
       return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [isAuthenticated, loading]);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setIsAuthenticated(false);
     setAuthToken(null);
-    setShowLoginModal(true); // Show modal immediately after logout
-    // Clear any stored tokens
+    setShowLoginModal(true);
     localStorage.removeItem('auth_token');
-  };
+    localStorage.removeItem('data');
+  }, []);
 
-  // Use the authenticatedFetch from API service
-  const makeAuthenticatedRequest = async (url, options = {}) => {
+  // API methods
+  const makeAuthenticatedRequest = useCallback(async (url, options = {}) => {
     try {
       const response = await authenticatedFetch(url, options);
-      
-      // If we get 401, user session expired
-      if (response.status === 401) {
-        setIsAuthenticated(false);
-        setAuthToken(null);
-        localStorage.removeItem('auth_token');
-        throw new Error('Session expired. Please login again.');
-      }
-      
+      if (response.status === 401) throw new Error('Session expired');
       return response;
     } catch (error) {
-      // Handle session expiry
-      if (error.message.includes('Authentication required') || error.message.includes('session expired')) {
-        setIsAuthenticated(false);
-        setAuthToken(null);
-        localStorage.removeItem('auth_token');
+      if (error.message.includes('Authentication required') || error.message.includes('Session expired')) {
+        logout();
       }
       throw error;
     }
-  };
+  }, [logout]);
 
-  // Convenient method to fetch job data
-  const getJobData = async () => {
+  const getJobData = useCallback(async () => {
     try {
-      const result = await fetchJobData();
-      return result;
+      return await fetchJobData();
     } catch (error) {
-      // Handle auth errors
-      if (error.message.includes('Authentication required')) {
-        setIsAuthenticated(false);
-        setAuthToken(null);
-      }
+      if (error.message.includes('Authentication required')) logout();
       throw error;
     }
-  };
+  }, [logout]);
 
-  const value = {
+  // Memoized context value
+  const contextValue = useMemo(() => ({
     isAuthenticated,
     loading,
-    login,
-    logout,
-    authenticatedFetch: makeAuthenticatedRequest,
-    getJobData,
+    setLoading,
     authToken,
     showLoginModal,
+    login,
+    logout,
     setShowLoginModal,
-  };
+    authenticatedFetch: makeAuthenticatedRequest,
+    getJobData
+  }), [
+    isAuthenticated,
+    loading,
+    setLoading,
+    authToken,
+    showLoginModal,
+    login,
+    logout,
+    makeAuthenticatedRequest,
+    getJobData
+  ]);
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

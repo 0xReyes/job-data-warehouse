@@ -3,6 +3,9 @@ name: Fetch Remote Software Jobs
 
 on:
   workflow_dispatch: # Allows manual triggering from any branch
+  push:
+    branches: [ feature/test ]
+
   schedule:
     - cron: '0 0 * * *' # Runs daily at midnight UTC
 
@@ -21,17 +24,19 @@ jobs:
           python-version: '3.x'
 
       - name: Install dependencies
-        run: pip install requests
+        run: |
+          pip install -r scripts/requirements.txt
 
       - name: Fetch job data
         env:
           SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
-        run: python scripts/test.py
+        run: |
+          python scripts/fetch_jobs.py
 
-      # - name: Commit and push changes
-      #   run: |
-      #     git config user.name "GitHub Actions"
-      #     git config user.email "github-actions@github.com"
-      #     git add data/jobs_data.json
-      #     git commit -m "Automated: Update job data [skip ci]" || echo "No changes to commit"
-      #     git push origin feature/test
+      - name: Commit and push changes
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "github-actions@github.com"
+          git add data/*.json
+          git commit -m "Automated: Update job data [skip ci]" || echo "No changes to commit"
+          git push origin feature/test

@@ -1,0 +1,53 @@
+{
+  "SEARCH_SETTINGS": {
+    "time_filter": "qdr:d"
+  },
+  "JOB_TITLE_KEYWORDS": [
+    "Engineer"
+  ],
+  "REMOTE_KEYWORDS": [
+    "fully remote",
+    "remote",
+    "work from anywhere"
+  ],
+  "EXCLUDED_KEYWORDS": [
+    "onsite",
+    "hybrid",
+    "intern"
+  ],
+  "ATS_CONFIG": {
+    "ashbyhq": {
+      "domain": "jobs.ashbyhq.com",
+      "parsing_strategy": "ld+json"
+    },
+    "careers-page": {
+      "domain": "careers-page.com",
+      "parsing_strategy": "ld+json"
+    },
+    "greenhouse": {
+      "domain": "job-boards.greenhouse.io",
+      "parsing_strategy": "remix_context"
+    },
+    "greenhouse_legacy": {
+      "domain": "boards.greenhouse.io",
+      "parsing_strategy": "selectors",
+      "selector": "div#content",
+      "title_selector": "h1.app-title",
+      "company_selector": "span.company-name",
+      "location_selector": "div.location",
+      "date_selector": null
+    },
+    "lever": {
+      "domain": "jobs.lever.co",
+      "parsing_strategy": "ld+json"
+    },
+    "workday": {
+      "domain": "myworkdayjobs.com",
+      "parsing_strategy": "ld+json"
+    },
+    "workable": {
+      "domain": "apply.workable.com",
+      "parsing_strategy": "ld+json"
+    }
+  }
+}
