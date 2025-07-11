@@ -173,6 +173,7 @@ class SimpleJobScraper:
         
         # Fetch all pages
         html = self.fetch_all_pages(query)
+        print(html)
         
         if not html:
             print("❌ No HTML content fetched")
@@ -180,6 +181,7 @@ class SimpleJobScraper:
         
         # Extract jobs
         jobs = self.extract_jobs(html)
+        print(jobs)
         
         # Save results
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
