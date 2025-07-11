@@ -41,6 +41,7 @@ class SimpleJobScraper:
             try:
                 response = self.session.get(url, headers=self.get_headers(), timeout=15)
                 html = response.text
+                print(html)
                 
                 # Check if we've reached the end
                 if ("did not match any documents" in html or 
