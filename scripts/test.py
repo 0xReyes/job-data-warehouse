@@ -18,7 +18,7 @@ class JobScraperWithDebug:
     def load_user_agents(self):
         """Load user agents from file or use defaults"""
         try:
-            if os.path.exists('user_agent.json'):
+            if os.path.exists('scripts/user_agent.json'):
                 with open('user_agent.json', 'r') as f:
                     agents = json.load(f)
                     print(f"✅ Loaded {len(agents)} user agents from file")
