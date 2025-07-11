@@ -9,14 +9,17 @@ SERPER_API_KEY = os.environ.get('SERPER_API_KEY')
 SERPER_API_KEY2 = os.environ.get('SERPER_API_KEY2')
 
 SEARCH_QUERY = """
-(site:*.myworkdayjobs.com OR site:job-boards.greenhouse.io/*/jobs/* OR site:jobs.ashbyhq.com/*/*/application OR site:jobs.lever.com/* OR site:*.workable.com/*/j/*) AND 'engineer' AND 'Remote' AND -onsite AND -Hybrid
+(site:.myworkdayjobs.com OR site:job-boards.greenhouse.io OR 
+     site:jobs.ashbyhq.com OR site:jobs.lever.co OR site:.workable.com OR
+     site:careers-page.com) AND
+(inurl:jobs OR inurl:job OR inurl:application OR inurl:/j/ OR inurl:apply) AND
+(engineer) AND remote AND -onsite AND -hybrid
 """
-
 DATA_FILE = 'data/jobs_data.json'
 def get_serper_results_recursive(query, page=1):
     url = "https://google.serper.dev/search"
     all_results = {}
-    payload = json.dumps({"q": query, "page": page, "num":20, "type": "search", "location": "United States"})
+    payload = json.dumps({"q": query, "page": page, "num":100, "type": "search", "location": "United States" , "tbs": "qdr:d"})
     headers = {
         'X-API-KEY': SERPER_API_KEY,
         'Content-Type': 'application/json'
@@ -25,22 +28,19 @@ def get_serper_results_recursive(query, page=1):
         response = requests.request("POST", url, headers=headers, data=payload)
         response.raise_for_status
         data = response.json()
+        res = { i.get('link'): {
+                    'title': i.get('title', ''),
+                    'link': i.get('link'),
+                    'snippet': i.get('snippet', ''),
+                    'date_fetched': i.get('date')
+                } for i in data.get('organic', []) if i.get('link', None)
+        }
+        if not res:
+            return all_results
     except:
         return all_results
-
-    # Process and append current page's results
-    res = {i.get('link'): {
-                'title': i.get('title', ''),
-                'link': i.get('link'),
-                'snippet': i.get('snippet', ''),
-                'date_fetched': i.get('date')
-            }
-        for i in data.get('organic', []) if i.get('link', None)
-    }
     all_results.update(res)
-    print(len(data.get('organic', [])))
-    if 'nextPageToken' in data and data['nextPageToken']:
-        all_results.update(get_serper_results_recursive(query, page + 1))
+    all_results.update(get_serper_results_recursive(query, page + 1))
     return all_results
 
 def load_jobs():
