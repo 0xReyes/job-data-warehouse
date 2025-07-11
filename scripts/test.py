@@ -13,6 +13,11 @@ class StealthJobScraper:
         
         # Load user agents from file or use defaults
         self.user_agents = self.load_user_agents()
+        self.accept_headers = [
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        ]
         
     def load_user_agents(self):
         """Load user agents from user_agent.json or return defaults"""
@@ -46,12 +51,6 @@ class StealthJobScraper:
             
             return default_agents
         
-        # Real browser accept headers
-        self.accept_headers = [
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-        ]
 
     def get_stealth_headers(self):
         """Ultra-realistic browser headers"""
