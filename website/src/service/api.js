@@ -82,13 +82,15 @@ export const authenticatedFetch = async (url, options = {}) => {
       },
     };
 
-    const response = await fetch(url, fetchOptions);
-    
+    const response = await authApi.get(url);
     if (response.status === 401) {
       throw new Error('Authentication required or session expired');
     }
+    if (response.data){
+      console.log(Object.values(response.data))
+      return Object.values(response.data);
+    }
     
-    return response;
   } catch (error) {
     console.error('Authenticated fetch error:', error);
     throw error;
@@ -96,19 +98,14 @@ export const authenticatedFetch = async (url, options = {}) => {
 };
 
 // Fetch job data with authentication
-export const fetchJobData = async () => {
+export const fetchJobData = async (options) => {
   try {
     const jobDataUrl = `${API_BASE_URL}/raw.githubusercontent.com/0xReyes/job-data-warehouse/feature/test/data/jobs_data.json`;
-    const response = await authenticatedFetch(jobDataUrl);
+    const data = await authenticatedFetch(jobDataUrl);
     
-    if (!response.ok) {
-      throw new Error(`Failed to fetch job data: ${response.status} ${response.statusText}`);
-    }
-    
-    const jobData = await response.json();
     return {
       success: true,
-      data: jobData
+      data
     };
   } catch (error) {
     console.error('Job data fetch error:', error);

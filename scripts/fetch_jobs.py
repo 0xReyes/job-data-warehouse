@@ -1,57 +1,69 @@
-# scripts/fetch_jobs.py
 import requests
 import json
 import os
 from datetime import datetime
-import time
+import re
 
 SERPER_API_KEY = os.environ.get('SERPER_API_KEY')
-SERPER_API_KEY2 = os.environ.get('SERPER_API_KEY2')
-
 SEARCH_QUERY = """
-(site:.myworkdayjobs.com OR site:job-boards.greenhouse.io OR 
-     site:jobs.ashbyhq.com OR site:jobs.lever.co OR site:.workable.com OR
-     site:careers-page.com) AND
-(inurl:jobs OR inurl:job OR inurl:application OR inurl:/j/ OR inurl:apply) AND
-(engineer) AND remote AND -onsite AND -hybrid
+(
+site:myworkdayjobs.com
+OR site:job-boards.greenhouse.io
+OR site:jobs.ashbyhq.com
+OR site:jobs.lever.co
+OR site:workable.com
+OR site:careers-page.com
+)
+AND
+(
+inurl:jobs
+OR inurl:job
+OR inurl:application
+OR inurl:/j/
+OR inurl:apply
+)
+AND
+'Engineer' AND 'Remote' AND -onsite AND -hybrid
 """
+pattern = r"(http[s|]?:\/\/jobs\.ashbyhq\.com\/([^\/]+)\/|http[s|]?:\/\/jobs\.workable\.com\/view\/[^\/]+\/[^\/]+-at-([^\/]+)\/|http[s|]?:\/\/apply\.workable\.com\/([^\/]+)\/|http[s|]?:\/\/job-boards\.greenhouse\.io\/([^\/]+)\/jobs\/\d+|http[s|]?:\/\/([^.]+)\.wd[1-5]\.myworkdayjobs\.com\/|http[s|]?:\/\/jobs\.lever\.co\/([^\/]+)\/|http[s|]?:\/\/(www\.)?careers-page\.com\/([^\/]+)\/|http[s|]?:\/\/remote\.united\/([^\/]+)\/)"
 DATA_FILE = 'data/jobs_data.json'
+
 def get_serper_results_recursive(query, page=1):
     url = "https://google.serper.dev/search"
     all_results = {}
-    payload = json.dumps({"q": query, "page": page, "num":100, "type": "search", "location": "United States" , "tbs": "qdr:d"})
-    headers = {
-        'X-API-KEY': SERPER_API_KEY,
-        'Content-Type': 'application/json'
-    }
+    payload = json.dumps({"q": query, "page": page, "num": 100, "type": "search", "location": "United States", "tbs": "qdr:w"})
+    headers = {'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json'}
+
     try:
-        response = requests.request("POST", url, headers=headers, data=payload)
-        response.raise_for_status
+        response = requests.post(url, headers=headers, data=payload)
+        response.raise_for_status()
         data = response.json()
-        res = { i.get('link'): {
-                    'title': i.get('title', ''),
-                    'link': i.get('link'),
-                    'snippet': i.get('snippet', ''),
-                    'date_fetched': i.get('date')
-                } for i in data.get('organic', []) if i.get('link', None)
+        res = {
+            i.get('link'): {**i
+            } for i in data.get('organic', []) if i.get('link') and len(i.get('link').split('/'))
         }
-        if not res:
-            return all_results
-    except:
-        return all_results
-    all_results.update(res)
-    all_results.update(get_serper_results_recursive(query, page + 1))
+
+        for link in res:
+            match = re.search(pattern, link)
+            if match:
+                company = match.groups()[1:]  # Skip full match and www group
+                res[link]['company_name'] = next((group for group in company if group is not None), 'Unknown Company')
+
+        all_results.update(res)
+        if res and page < 10:
+            all_results.update(get_serper_results_recursive(query, page + 1))
+    except Exception as e:
+        print(f"Error fetching page {page}: {e}")
+    
     return all_results
 
 def load_jobs():
-    """Load existing jobs from file."""
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, 'r') as f:
             return json.load(f)
     return {}
 
 def save_jobs(jobs):
-    """Save jobs to file."""
     os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
     with open(DATA_FILE, 'w') as f:
         json.dump(jobs, f, indent=2)
