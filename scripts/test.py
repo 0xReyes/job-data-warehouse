@@ -160,6 +160,7 @@ class StealthJobScraper:
                 headers = self.get_stealth_headers()
                 response = self.session.get(url, headers=headers, timeout=20)
                 html = response.text
+                print(html)
                 
                 # Check for blocking
                 is_blocked, block_reason = self.check_for_blocking(html)
