@@ -98,7 +98,7 @@ export const authenticatedFetch = async (url, options = {}) => {
 // Fetch job data with authentication
 export const fetchJobData = async (options) => {
   try {
-    const jobDataUrl = `${API_BASE_URL}/raw.githubusercontent.com/0xReyes/job-data-warehouse/feature/test/data/processed.json`;
+    const jobDataUrl = `${API_BASE_URL}/jobs`;
     const data = await authenticatedFetch(jobDataUrl);
 
     return {
