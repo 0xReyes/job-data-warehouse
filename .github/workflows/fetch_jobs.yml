@@ -4,39 +4,39 @@ name: Fetch Remote Software Jobs
 on:
   workflow_dispatch: # Allows manual triggering from any branch
   push:
-    branches: [ feature/test ]
+    branches: [ main, feature/test ] # Runs on pushes to main or feature/test
 
   schedule:
-    - cron: '0 0 * * *' # Runs daily at midnight UTC
+    - cron: '0 */6 * * *' # Runs every 6 hours
 
 jobs:
-  fetch_and_update:
+  fetch-and-update-db:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.PAT }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.9'
 
       - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install -r scripts/requirements.txt
 
-      - name: Fetch job data
+      - name: Fetch job data and update database
         env:
+          # Required API key for Google Search
           SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
+          
+          # Required database credentials
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+
+          # Optional: Override default DB connection info if needed
+          # DB_HOST: ${{ secrets.DB_HOST }}
+          # DB_NAME: ${{ secrets.DB_NAME }}
         run: |
           python scripts/fetch_jobs.py
-
-      - name: Commit and push changes
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "github-actions@github.com"
-          git add data/*.json
-          git commit -m "Automated: Update job data [skip ci]" || echo "No changes to commit"
-          git push origin feature/test
