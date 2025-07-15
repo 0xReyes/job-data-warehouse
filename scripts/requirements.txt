@@ -2,3 +2,4 @@ aiohttp==3.9.5
 beautifulsoup4==4.12.3
 pydantic==2.7.4
 tenacity==8.4.1
+psycopg2-binary==2.9.9

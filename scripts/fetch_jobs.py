@@ -100,7 +100,7 @@ class DatabaseManager:
             'database': os.getenv('DB_NAME', 'neondb'),
             'user': os.getenv('POSTGRES_USER'),
             'password': os.getenv('POSTGRES_PASSWORD'),
-            'sslmode': os.getenv('DB_SSLMODE', 'require')
+            'sslmode': "require"
         }
         if not self.db_config['user'] or not self.db_config['password']:
             raise ValueError("Database credentials not found in environment variables.")
