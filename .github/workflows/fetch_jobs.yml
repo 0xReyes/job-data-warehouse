@@ -29,7 +29,7 @@ jobs:
       - name: Fetch job data and update database
         env:
           # Required API key for Google Search
-          SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
+          SERPER_API_KEY: ${{ secrets.SERPER_API_KEY3 }}
           
           # Required database credentials
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
