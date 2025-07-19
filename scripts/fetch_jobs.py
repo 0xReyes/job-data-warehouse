@@ -193,9 +193,9 @@ class DatabaseManager:
 # --- Core Scraper Class ---
 class JobScraper:
     def __init__(self, config_path="scripts/config.json"):
-        self.serp_api_key = os.getenv("SERPER_API_KEY")
+        self.serp_api_key = os.getenv("SERPER_API_KEY3")
         if not self.serp_api_key:
-            raise ValueError("SERPER_API_KEY environment variable not set.")
+            raise ValueError("SERPER_API_KEY3 environment variable not set.")
 
         self.config = self._load_config(config_path)
         self.ats_config = self.config.get("ATS_CONFIG", {})
